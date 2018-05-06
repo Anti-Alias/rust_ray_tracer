@@ -1,39 +1,41 @@
-extern crate raster;
-
-use geom::{Vec3, Ray3, Plane};
-use self::raster::{Image};
+use geom::{Vector, Ray, Plane};
 
 #[derive(Debug)]
-struct Camera {
-    pub up: Vec3,
-    pub eye: Ray3,
+pub struct Camera {
+    pub up: Vector,
     pub dist: f64,
+    pub eye: Ray,
     pub frust_width: f64,
     pub frust_height: f64
 }
 
 impl Camera {
-    fn near_plane(&self, image: &mut Image) -> Plane {
+    pub fn near_plane(&self) -> Plane {
 
         // Determines center of near plane.
-        let eye_forced: Ray3 = self.eye.to_len(self.dist);
+        let eye_forced: Ray = self.eye.to_len(self.dist);
 
         // Determines 'right' vector
-        let right_dir: Vec3 = eye_forced
+        let right_dir: Vector = eye_forced
             .dir
             .cross(&self.up)
             .to_len(self.frust_width);
 
         // Determines the 'up' vector
-        let up_dir: Vec3 = right_dir
+        let up_dir: Vector = right_dir
             .cross(&eye_forced.dir)
             .to_len(self.frust_height);
 
         // Calculates bottom-left corner of near plane
-        let center: Vec3 = eye_forced.end();
-        let bottom_left: Vec3 = center - (right_dir/2.0) - (up_dir/2.0);
+        let center: Vector = eye_forced.end();
+        let bottom_left: Vector = center - (right_dir/2.0) - (up_dir/2.0);
 
         // Calculates the plane on which to interpolate
         Plane::new(bottom_left, right_dir, up_dir)
+    }
+
+    pub fn look_at(&mut self, point: Vector) {
+        let origin = self.eye.origin;
+        self.eye = Ray::new(origin, point - origin);
     }
 }
