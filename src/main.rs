@@ -5,7 +5,7 @@ mod geom;
 mod scene;
 
 use geom::{Vector, Ray, Plane};
-use scene::{Scene, Camera, Sphere, SceneObject};
+use scene::{Scene, Camera, Sphere, SceneObject, Intersection};
 use raster::{Color, Image};
 use std::fs;
 
@@ -33,13 +33,20 @@ fn main() {
                     z: 0.0
                 },
                 color: Color::red(),
-                radius: 3.0
+                radius: 5.0
             }
         )
     );
 
+    let ray = Ray {
+        origin: Vector::new(0.0, 0.0, 10.0),
+        dir: Vector::new(0.0, 0.0, -1.0)
+    };
+    let maybe_inter: Option<Intersection> = objects[0].intersect(&ray.to_unit());
+        println!("Intersection: {:?}", maybe_inter);
+
     // Builds scene that will use camera
-    let scene = Scene {
+    let mut scene = Scene {
         color: Color {r: 100, g: 100, b: 100, a: 255},
         camera,
         objects
@@ -49,8 +56,10 @@ fn main() {
     let mut canvas = Image::blank(512, 512);
 
     // For a number of frames...
-    let frames = 1;
+    let frames = 20;
     for frame in 0..frames {
+
+        println!("Rendering frame {}", frame);
 
         // Trace scene
         scene.render(&mut canvas);
@@ -59,6 +68,9 @@ fn main() {
         fs::create_dir_all("images").unwrap();
         let filename: String = format!("images/frame_{}.png", frame);
         raster::save(&canvas, &filename);
+
+        // Move camera
+        scene.camera.eye.origin.z -= 0.5;
     }
 
     println!("Done!!!!!");

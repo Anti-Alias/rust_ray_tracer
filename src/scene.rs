@@ -28,28 +28,40 @@ impl SceneObject for Sphere {
 
     fn intersect(&self, ray: &Ray) -> Option<Intersection> {
 
-        // Extracts properties
-        let r: f64 = self.radius;
-        let o: Vector = ray.origin;
-        let c: Vector = self.pos;
-        let d: Vector = ray.dir;
+        let xd: f64 = ray.dir.x;
+        let yd: f64 = ray.dir.y;
+        let zd: f64 = ray.dir.z;
 
-        // Calculates a, b and c for quadratic formula
-        let a: f64 = d.len_squared();
-        let b: f64 = 2.0 * (d.x*(o.x - c.x) + d.y*(o.y - c.y) + d.z*(o.z - c.z));
-        let c: f64 = c.len_squared() + o.len_squared() - 2.0*(c.dot(&o)) - r * r;
+        let xc: f64 = self.pos.x;
+        let yc: f64 = self.pos.y;
+        let zc: f64 = self.pos.z;
 
-        // Calculates discriminant. Exits early if negative.
-        let discriminant: f64 = b*b - 4.0*a*c;
-        if discriminant < 0.0 { return None; }
+        let sr:f64 = self.radius;
 
-        // Solves for t and returns intersection.
-        let t: f64 = -b-discriminant.sqrt() / 2.0*a;
-        let intersection = Intersection {
+        let x0: f64 = ray.origin.x;
+        let y0: f64 = ray.origin.y;
+        let z0: f64 = ray.origin.z;
+
+        let h = x0 - xc;
+        let i = y0 - yc;
+        let j = z0 - zc;
+
+        let a: f64 = xd*xd + yd*yd + zd*zd;
+        let b: f64 = 2.0 * ( xd*h + yd*i + zd*j );
+        let c: f64 = h*h + i*i + j*j - sr*sr;
+
+        let discrim: f64 = b*b - 4.0*a*c;
+        if discrim < 0.0 { return None; }
+
+
+        let t: f64 = (-b - discrim.sqrt()) / 2.0;
+        if t < 0.0 { return None; }
+
+        let inter = Intersection {
             t,
             meta: IntersectionMeta::Nothing
         };
-        Some(intersection)
+        Some(inter)
     }
 }
 
