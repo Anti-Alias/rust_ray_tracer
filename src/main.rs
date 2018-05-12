@@ -5,7 +5,7 @@ mod geom;
 mod scene;
 
 use geom::{Vector, Ray, Plane};
-use scene::{Scene, Camera};
+use scene::{Scene, Camera, Sphere, SceneObject};
 use raster::{Color, Image};
 use std::fs;
 
@@ -22,11 +22,27 @@ fn main() {
         frust_height: 10.0
     };
 
+    // Creates sphere(s)
+    let mut objects: Vec<Box<SceneObject>> = Vec::new();
+    objects.push(
+        Box::new (
+            Sphere {
+                pos: Vector {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0
+                },
+                color: Color::red(),
+                radius: 3.0
+            }
+        )
+    );
+
     // Builds scene that will use camera
     let scene = Scene {
         color: Color {r: 100, g: 100, b: 100, a: 255},
         camera,
-        objects: Vec::new()
+        objects
     };
 
     // Create canvas image
@@ -36,15 +52,14 @@ fn main() {
     let frames = 1;
     for frame in 0..frames {
 
-        // Draw image
+        // Trace scene
         scene.render(&mut canvas);
 
         // Save image
         fs::create_dir_all("images").unwrap();
         let filename: String = format!("images/frame_{}.png", frame);
-        raster::save(&canvas, &filename).unwrap();
+        raster::save(&canvas, &filename);
     }
 
-    println!("{:#?}", camera);
     println!("Done!!!!!");
 }
