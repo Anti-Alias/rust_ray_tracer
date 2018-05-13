@@ -5,7 +5,9 @@ In the future, it will support complex shapes like meshes.
 
 ## To Build
 Ensure that Rust with Cargo is installed from [here](https://doc.rust-lang.org/cargo/getting-started/installation.html)
-On the command line, navigate to the ray_tracer project and invoke:
+On the command line, navigate to the ray_tracer project and write the following:
 ```bash
 cargo run --release
 ```
+
+Navigate to ./images and see the generated images.
