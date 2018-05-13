@@ -1,4 +1,5 @@
 use std::ops::{Add, Sub, Mul, Div, Neg};
+use rand::Rng;
 
 
 pub fn clamp(num: f64) -> f64 {
@@ -47,6 +48,16 @@ impl Vector {
 
     pub fn clamp(&self) -> Vector {
         Vector { x: clamp(self.x), y: clamp(self.y), z: clamp(self.z)}
+    }
+
+    /// Random unit vector
+    pub fn rand<T>(rng: &mut T) -> Vector
+    where T: Rng {
+        Vector {
+            x: rng.gen_range(-1.0, 1.0),
+            y: rng.gen_range(-1.0, 1.0),
+            z: rng.gen_range(-1.0, 1.0)
+        }.to_unit()
     }
 }
 

@@ -1,8 +1,9 @@
-
 use std::fmt::Debug;
 use geom::{Vector, Ray, Intersection};
 
 pub trait Shape : Debug {
+    fn set_position(&mut self, pos: &Vector);
+    fn get_position(&self) -> Vector;
     fn intersect(&self, ray: &Ray) -> Option<Intersection>;
     fn intersects(&self, ray: &Ray) -> bool {
         self.intersect(ray).is_some()
@@ -23,6 +24,12 @@ impl Clone for Sphere {
 }
 
 impl Shape for Sphere {
+
+    fn get_position(&self) -> Vector { self.center }
+
+    fn set_position(&mut self, pos: &Vector) {
+        self.center = *pos;
+    }
 
     fn intersect(&self, ray: &Ray) -> Option<Intersection> {
 

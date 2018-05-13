@@ -6,3 +6,5 @@ authors = ["William Cahill <drewlikesramen@gmail.com>"]
 [dependencies]
 raster = "0.2.0"
 derive-new = "0.5"
+rand = "0.4.2"
+

@@ -1,7 +1,7 @@
 extern crate raster;
 
 use shape::{Shape};
-use geom::{clamp, Vector, Ray, Plane, Intersection};
+use geom::{Vector, Ray, Plane, Intersection};
 use self::raster::{Image, Color};
 use std::cmp::Ordering;
 
@@ -74,10 +74,10 @@ impl Scene {
     fn write_intersections(&self, ray: &Ray, intersections: &mut Vec<Intersection>) {
 
         // For every object in the scene...
-        for obj in &self.shapes {
+        for shape in &self.shapes {
 
             // Calculates intersection
-            let maybe_inter: Option<Intersection> = obj.intersect(ray);
+            let maybe_inter: Option<Intersection> = shape.intersect(ray);
 
             // If intersection found, add that intersection
             if let Some(inter) = maybe_inter {
@@ -113,12 +113,12 @@ impl Scene {
         let mut intersections = Vec::<Intersection>::new();
 
         // For all pixels...
-        for y in 0..width {
-            for x in 0..height {
+        for y in 0..height {
+            for x in 0..width {
 
                 // Calculates 'y' value in image.
                 // Flips upside-down
-                let y2 = height - y;
+                let y2 = height - y - 1;
 
                 // Clears intersections for this run
                 intersections.clear();
@@ -185,10 +185,10 @@ impl Scene {
                     let final_color: Vector = (material_color * (ambient_color + total_light_color)).clamp();
 
                     // Sets current pixel to that color
-                    image.set_pixel(x, y2, vector_to_color(&final_color));
+                    image.set_pixel(x, y2, vector_to_color(&final_color)).unwrap();
                 }
                 else {
-                    image.set_pixel(x, y2, vector_to_color(&self.color_background));
+                    image.set_pixel(x, y2, vector_to_color(&self.color_background)).unwrap();
                 }
             }
         }
