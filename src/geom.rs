@@ -1,5 +1,12 @@
 use std::ops::{Add, Sub, Mul, Div, Neg};
 
+
+pub fn clamp(num: f64) -> f64 {
+    if num < 0.0 { 0.0 }
+    else if num > 1.0 { 1.0 }
+    else { num }
+}
+
 #[derive(Copy, Clone, Debug, new)]
 pub struct Vector {
     pub x: f64,
@@ -36,6 +43,10 @@ impl Vector {
             y: -(self.x*other.z - self.z*other.x),
             z: self.x*other.y - self.y*other.x
         }
+    }
+
+    pub fn clamp(&self) -> Vector {
+        Vector { x: clamp(self.x), y: clamp(self.y), z: clamp(self.z)}
     }
 }
 
@@ -118,7 +129,7 @@ pub struct Ray {
 impl Ray {
 
     pub fn interp(&self, t: f64) -> Vector {
-        self.origin + self.dir * t
+        self.origin + self.dir*t
     }
 
     pub fn end(&self) -> Vector {
@@ -161,4 +172,12 @@ impl Plane {
     pub fn interp(&self, us: f64, vs: f64) -> Vector {
         self.origin + self.u*us + self.v*vs
     }
+}
+
+#[derive(Debug)]
+pub struct Intersection {
+    pub t: f64,
+    pub position: Vector,
+    pub normal: Vector,
+    pub color: Vector
 }

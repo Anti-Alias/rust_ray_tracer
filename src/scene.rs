@@ -1,79 +1,15 @@
 extern crate raster;
 
-use std::fmt::Debug;
-use geom::{Vector, Ray, Plane};
+use shape::{Shape};
+use geom::{clamp, Vector, Ray, Plane, Intersection};
 use self::raster::{Image, Color};
-use self::raster::error::RasterResult;
-use self::raster::editor;
 use std::cmp::Ordering;
 
-pub trait SceneObject : Debug {
-    fn intersect(&self, ray: &Ray) -> Option<Intersection>;
-}
-
-#[derive(Debug)]
-pub struct Sphere {
-    pub pos: Vector,
-    pub radius: f64,
-    pub color: Color
-}
-
-impl Clone for Sphere {
-    fn clone(&self) -> Sphere {
-        Sphere { pos: self.pos, radius: self.radius, color: self.color.clone() }
-    }
-}
-
-impl SceneObject for Sphere {
-
-    fn intersect(&self, ray: &Ray) -> Option<Intersection> {
-
-        let xd: f64 = ray.dir.x;
-        let yd: f64 = ray.dir.y;
-        let zd: f64 = ray.dir.z;
-
-        let xc: f64 = self.pos.x;
-        let yc: f64 = self.pos.y;
-        let zc: f64 = self.pos.z;
-
-        let sr:f64 = self.radius;
-
-        let x0: f64 = ray.origin.x;
-        let y0: f64 = ray.origin.y;
-        let z0: f64 = ray.origin.z;
-
-        let h = x0 - xc;
-        let i = y0 - yc;
-        let j = z0 - zc;
-
-        let a: f64 = xd*xd + yd*yd + zd*zd;
-        let b: f64 = 2.0 * ( xd*h + yd*i + zd*j );
-        let c: f64 = h*h + i*i + j*j - sr*sr;
-
-        let discrim: f64 = b*b - 4.0*a*c;
-        if discrim < 0.0 { return None; }
-
-
-        let t: f64 = (-b - discrim.sqrt()) / 2.0;
-        if t < 0.0 { return None; }
-
-        let inter = Intersection {
-            t,
-            meta: IntersectionMeta::Nothing
-        };
-        Some(inter)
-    }
-}
-
-#[derive(Debug)]
-pub enum IntersectionMeta {
-    Nothing
-}
-
-#[derive(Debug)]
-pub struct Intersection {
-    t: f64,
-    meta: IntersectionMeta
+pub fn vector_to_color(vector: &Vector) -> Color {
+    let r = (vector.x * 255.0) as u8;
+    let g = (vector.y * 255.0) as u8;
+    let b = (vector.z * 255.0) as u8;
+    Color { r, g, b, a: 255 }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -117,11 +53,19 @@ impl Camera {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Light {
+    pub position: Vector,
+    pub color: Vector
+}
+
 #[derive(Debug)]
 pub struct Scene {
-    pub color: Color,
+    pub color_background: Vector,
+    pub color_ambient: Vector,
     pub camera: Camera,
-    pub objects: Vec<Box<SceneObject>>
+    pub shapes: Vec<Box<Shape>>,
+    pub lights: Vec<Light>
 }
 
 impl Scene {
@@ -130,7 +74,7 @@ impl Scene {
     fn write_intersections(&self, ray: &Ray, intersections: &mut Vec<Intersection>) {
 
         // For every object in the scene...
-        for obj in &self.objects {
+        for obj in &self.shapes {
 
             // Calculates intersection
             let maybe_inter: Option<Intersection> = obj.intersect(ray);
@@ -140,6 +84,16 @@ impl Scene {
                 intersections.push(inter);
             }
         }
+    }
+
+    /// Returns true if ray intersects with any object in the scene
+    fn intersects(&self, ray: &Ray) -> bool {
+        for shape in &self.shapes {
+            if shape.intersects(ray) {
+                return true;
+            }
+        }
+        false
     }
 
     pub fn render(&self, image: &mut Image) {
@@ -162,6 +116,10 @@ impl Scene {
         for y in 0..width {
             for x in 0..height {
 
+                // Calculates 'y' value in image.
+                // Flips upside-down
+                let y2 = height - y;
+
                 // Clears intersections for this run
                 intersections.clear();
 
@@ -172,16 +130,19 @@ impl Scene {
                 // Gets associated point on the plane
                 let plane_pos: Vector = plane.interp(xr, yr);
 
+                // Determines direction of eye to plane position.
+                let eye_dir: Vector = plane_pos - eye;
+
                 // Defines the ray to cast through that position
-                let eye_to_surface = Ray { origin: eye, dir: plane_pos - eye };
+                let ray = Ray { origin: plane_pos, dir: eye_dir };
 
                 // Calculates intersections
-                self.write_intersections(&eye_to_surface, &mut intersections);
+                self.write_intersections(&ray, &mut intersections);
 
                 // If intersections were found..
                 if intersections.len() > 0 {
 
-                    // Sorts list
+                    // Sorts intersections from closest to farthest
                     intersections.sort_unstable_by(|a, b| {
                         if a.t < b.t { Ordering::Less }
                         else if a.t > b.t { Ordering::Greater }
@@ -191,11 +152,43 @@ impl Scene {
                     // Gets closest one
                     let closest: &Intersection = &intersections[0];
 
+                    // Gets ambient color
+                    let ambient_color: Vector = self.color_ambient;
+
+                    // Gets material color
+                    let material_color: Vector = closest.color;
+
+                    // Initializes total light color as zero.
+                    let mut total_light_color: Vector = Vector::new(0.0, 0.0, 0.0);
+
+                    // Sums light color value for all lights
+                    let surface_normal_unit: Vector = closest.normal.to_unit();
+                    for light in &self.lights {
+
+                        // Skips this light if it is in the shadow
+                        let inter_pos: Vector = closest.position;
+                        let light_dir: Vector = light.position - inter_pos;
+                        let inter_to_light = Ray {
+                            origin: inter_pos,
+                            dir: light_dir
+                        };
+                        if self.intersects(&inter_to_light) { continue; }
+
+                        // Adds light value
+                        let light_dir_unit: Vector = light_dir.to_unit();
+                        let cos_angle: f64 = surface_normal_unit.dot(&light_dir_unit);
+                        let delta_color = (light.color * cos_angle).clamp();
+                        total_light_color = total_light_color + delta_color;
+                    }
+
+                    // Calculates final color
+                    let final_color: Vector = (material_color * (ambient_color + total_light_color)).clamp();
+
                     // Sets current pixel to that color
-                    image.set_pixel(x, y, Color::red());
+                    image.set_pixel(x, y2, vector_to_color(&final_color));
                 }
                 else {
-                    image.set_pixel(x, y, self.color.clone());
+                    image.set_pixel(x, y2, vector_to_color(&self.color_background));
                 }
             }
         }

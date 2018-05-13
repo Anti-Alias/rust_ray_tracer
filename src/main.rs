@@ -3,53 +3,76 @@ extern crate derive_new;
 extern crate raster;
 mod geom;
 mod scene;
+mod shape;
 
-use geom::{Vector, Ray, Plane};
-use scene::{Scene, Camera, Sphere, SceneObject, Intersection};
+use geom::{Vector, Ray, Plane, Intersection};
+use shape::{Sphere, Shape};
+use scene::{Scene, Camera, Light};
 use raster::{Color, Image};
 use std::fs;
 
 fn main() {
 
     // Creates Camera that will be used in the scene
-    let origin = Vector::new(0.0, 0.0, 10.0);
+    let origin = Vector::new(0.0, 2.0, 10.0);
     let dir = Vector::new(0.0, 0.0, -1.0);
     let camera = Camera {
         up: Vector::new(0.0, 1.0, 0.0),
-        dist: 1.0,
+        dist: 2.0,
         eye: Ray { origin, dir },
         frust_width: 10.0,
         frust_height: 10.0
     };
 
     // Creates sphere(s)
-    let mut objects: Vec<Box<SceneObject>> = Vec::new();
-    objects.push(
+    let red = Vector::new(1.0, 0.0, 0.0);
+    let blue = Vector::new(0.0, 0.0, 1.0);
+    let white = Vector::new(1.0, 1.0, 1.0);
+    let mut shapes: Vec<Box<Shape>> = Vec::new();
+    shapes.push(
         Box::new (
             Sphere {
-                pos: Vector {
-                    x: 0.0,
+                center: Vector {
+                    x: 2.0,
                     y: 0.0,
                     z: 0.0
                 },
-                color: Color::red(),
+                color: red,
+                radius: 4.0
+            }
+        )
+    );
+
+    shapes.push(
+        Box::new (
+            Sphere {
+                center: Vector {
+                    x: -2.0,
+                    y: 0.0,
+                    z: 0.0
+                },
+                color: blue,
                 radius: 5.0
             }
         )
     );
 
-    let ray = Ray {
-        origin: Vector::new(0.0, 0.0, 10.0),
-        dir: Vector::new(0.0, 0.0, -1.0)
-    };
-    let maybe_inter: Option<Intersection> = objects[0].intersect(&ray.to_unit());
-        println!("Intersection: {:?}", maybe_inter);
+    // Creates lights
+    let lights = vec![
+        Light {
+            position: Vector::new(-20.0, 10.0, 10.0),
+            color: white
+        }
+    ];
+
 
     // Builds scene that will use camera
     let mut scene = Scene {
-        color: Color {r: 100, g: 100, b: 100, a: 255},
+        color_background: Vector::new(0.1, 0.1, 0.1),
+        color_ambient: Vector::new(0.1, 0.1, 0.1),
         camera,
-        objects
+        shapes,
+        lights
     };
 
     // Create canvas image
