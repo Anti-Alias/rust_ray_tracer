@@ -2,6 +2,7 @@
 extern crate derive_new;
 extern crate raster;
 extern crate rand;
+extern crate pad;
 
 pub mod geom;
 pub mod scene;
@@ -13,6 +14,8 @@ use scene::{Scene, Camera, Light};
 use raster::{Image};
 use std::fs;
 use rand::{Rng, SeedableRng, StdRng};
+use pad::{PadStr};
+use pad::Alignment;
 
 fn rand_sphere<T>(min_pos: Vector, max_pos: Vector, min_radius: f64, max_radius: f64, rng: &mut T) -> Sphere
 where T: Rng {
@@ -111,7 +114,8 @@ fn main() {
 
         // Save image
         fs::create_dir_all("images").unwrap();
-        let filename: String = format!("images/frame_{}.png", frame);
+        let number_str = format!("{}", frame).pad(5, '0', Alignment::Right, false);
+        let filename: String = format!("images/frame_{}.png", number_str);
         raster::save(&canvas, &filename).unwrap();
 
         // Move objects
