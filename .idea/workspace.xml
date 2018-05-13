@@ -2,13 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2c94ec4b-1742-4655-805d-48e3e52f4464" name="Default" comment="">
+      <change beforePath="" afterPath="$PROJECT_DIR$/Readme.md" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" afterPath="$PROJECT_DIR$/Cargo.toml" />
-      <change beforePath="$PROJECT_DIR$/src/geom.rs" afterPath="$PROJECT_DIR$/src/geom.rs" />
-      <change beforePath="$PROJECT_DIR$/src/lib.rs" afterPath="$PROJECT_DIR$/src/lib.rs" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" afterPath="$PROJECT_DIR$/src/main.rs" />
-      <change beforePath="$PROJECT_DIR$/src/scene.rs" afterPath="$PROJECT_DIR$/src/scene.rs" />
-      <change beforePath="$PROJECT_DIR$/src/shape.rs" afterPath="$PROJECT_DIR$/src/shape.rs" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -19,12 +14,25 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="main.rs" pinned="false" current-in-tab="true">
+      <file leaf-file-name="main.rs" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main.rs">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="255">
               <caret line="76" column="40" lean-forward="false" selection-start-line="76" selection-start-column="40" selection-end-line="76" selection-end-column="40" />
               <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Readme.md" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/Readme.md">
+          <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+            <state split_layout="SPLIT">
+              <first_editor relative-caret-position="170">
+                <caret line="10" column="3" lean-forward="true" selection-start-line="10" selection-start-column="3" selection-end-line="10" selection-end-column="3" />
+                <folding />
+              </first_editor>
+              <second_editor />
             </state>
           </provider>
         </entry>
@@ -167,6 +175,7 @@
         <option value="$PROJECT_DIR$/src/scene.rs" />
         <option value="$PROJECT_DIR$/src/geom.rs" />
         <option value="$PROJECT_DIR$/src/main.rs" />
+        <option value="$PROJECT_DIR$/Readme.md" />
       </list>
     </option>
   </component>
@@ -199,11 +208,6 @@
             <path>
               <item name="ray_tracer" type="b2602c69:ProjectViewProjectNode" />
               <item name="ray_tracer" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="ray_tracer" type="b2602c69:ProjectViewProjectNode" />
-              <item name="ray_tracer" type="462c0819:PsiDirectoryNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -617,6 +621,17 @@
         <state relative-caret-position="255">
           <caret line="76" column="40" lean-forward="false" selection-start-line="76" selection-start-column="40" selection-end-line="76" selection-end-column="40" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Readme.md">
+      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+        <state split_layout="SPLIT">
+          <first_editor relative-caret-position="170">
+            <caret line="10" column="3" lean-forward="true" selection-start-line="10" selection-start-column="3" selection-end-line="10" selection-end-column="3" />
+            <folding />
+          </first_editor>
+          <second_editor />
         </state>
       </provider>
     </entry>
