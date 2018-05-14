@@ -11,3 +11,8 @@ cargo run --release
 ```
 
 Navigate to ./images and see the generated images.
+
+To produce a video, install ffmpeg and run the following command:
+```bash
+ffmpeg -i images/frame_%05d.png -vf fps=60 -pix_fmt yuv420p -vcodec mpeg4 -b 50000k animation.mp4
+```

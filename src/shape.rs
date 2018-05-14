@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 use geom::{Vector, Ray, Intersection};
 
+const EPSILON: f64 = 0.000001;
+
 pub trait Shape : Debug {
     fn set_position(&mut self, pos: &Vector);
     fn get_position(&self) -> Vector;
@@ -10,17 +12,13 @@ pub trait Shape : Debug {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Sphere {
     pub center: Vector,
     pub radius: f64,
-    pub color: Vector
-}
-
-impl Clone for Sphere {
-    fn clone(&self) -> Sphere {
-        Sphere { center: self.center, radius: self.radius, color: self.color.clone() }
-    }
+    pub color: Vector,
+    pub reflectivity: f64,
+    pub exponent: f64
 }
 
 impl Shape for Sphere {
@@ -62,19 +60,54 @@ impl Shape for Sphere {
         let sqrt_discrim = discrim.sqrt();
         let mut t: f64 = (-b - sqrt_discrim) / two_a;
         let mut switch = 1.0;
-        if t < 0.0 {
+        if t < EPSILON {
             t = (-b + sqrt_discrim) / two_a;
-            if t < 0.0000000001 { return None; }
+            if t < EPSILON { return None; }
             switch = -1.0;
         }
+        if t > 1.0 { return None; }
 
         let point_on_sphere: Vector = ray.interp(t);
         let normal = (point_on_sphere - self.center) * switch;
+
         let inter = Intersection {
             t,
             position: point_on_sphere,
             normal,
-            color: self.color
+            reflectivity: self.reflectivity,
+            color: self.color,
+            exponent: self.exponent
+        };
+        Some(inter)
+    }
+}
+
+#[derive(Debug)]
+pub struct Floor {
+    pub position: Vector,
+    pub color: Vector,
+    pub reflectivity: f64,
+    pub exponent: f64
+}
+
+impl Shape for Floor {
+
+    fn get_position(&self) -> Vector { self.position }
+    fn set_position(&mut self, pos: &Vector) { self.position = *pos; }
+
+    fn intersect(&self, ray: &Ray) -> Option<Intersection> {
+
+        let t: f64 = (self.position.y - ray.origin.y) / ray.dir.y;
+        if t < EPSILON { return None }
+        else if t > 1.0 { return None};
+
+        let inter = Intersection {
+            t,
+            position: ray.interp(t),
+            normal: Vector::new(0.0, 1.0, 0.0),
+            reflectivity: self.reflectivity,
+            color: self.color,
+            exponent: self.exponent
         };
         Some(inter)
     }

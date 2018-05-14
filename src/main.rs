@@ -3,13 +3,14 @@ extern crate derive_new;
 extern crate raster;
 extern crate rand;
 extern crate pad;
+extern crate ray_tracer;
 
 pub mod geom;
 pub mod scene;
 pub mod shape;
 
 use geom::{Vector, Ray};
-use shape::{Sphere, Shape};
+use shape::{Shape, Sphere, Floor};
 use scene::{Scene, Camera, Light};
 use raster::{Image};
 use std::fs;
@@ -34,18 +35,21 @@ where T: Rng {
     Sphere {
         center,
         radius,
-        color
+        color,
+        reflectivity: 0.5,
+        exponent: 30.0
     }
 }
 
 fn main() {
 
     // Creates Camera that will be used in the scene
-    let origin = Vector::new(0.0, 2.0, 25.0);
+    let origin = Vector::new(0.0, 2.0, 30.0);
     let dir = Vector::new(0.0, 0.0, -1.0);
     let camera = Camera {
         up: Vector::new(0.0, 1.0, 0.0),
-        dist: 10.0,
+        near_dist: 10.0,
+        far_dist: 1000.0,
         eye: Ray { origin, dir },
         frust_width: 16.0,
         frust_height: 9.0
@@ -72,7 +76,32 @@ fn main() {
         );
     }
 
-    // Determines movement of objects using rng
+    // Adds dome
+    shapes.push(
+        Box::new(
+            Sphere {
+                center: Vector::new(0.0, 0.0, 0.0),
+                radius: 50.0,
+                color: Vector::new(0.0, 1.0, 0.5),
+                reflectivity: 0.0,
+                exponent: 100.0
+            }
+        )
+    );
+
+
+    // Adds floor
+    shapes.push(
+        Box::new (
+            Floor {
+                position: Vector::new(0.0, -10.0, 0.0),
+                color: Vector::new(0.0, 1.0, 0.5),
+                reflectivity: 0.0,
+                exponent: 15.0
+            }
+        )
+    );
+
 
     // Determines number of shapes and their velocities
     let mut velocities = Vec::new();
@@ -82,19 +111,29 @@ fn main() {
         velocities.push(rand_vel);
     }
 
+    // Adds zero valocity for floor
+    let zero = Vector::new(0.0, 0.0, 0.0);
+    velocities.push(zero);
+    velocities.push(zero);
+
     // Creates lights
     let lights = vec![
         Light {
             position: Vector::new(-20.0, 10.0, 10.0),
-            color: Vector::new(1.0, 1.0, 1.0)
+            color: Vector::new(1.0, 1.0, 1.0),
+            brightness: 400.0
+        },
+        Light {
+            position: Vector::new(20.0, 10.0, 10.0),
+            color: Vector::new(1.0, 1.0, 1.0),
+            brightness: 400.0
         }
     ];
-
 
     // Builds scene that will use camera
     let mut scene = Scene {
         color_background: Vector::new(0.2, 0.2, 0.2),
-        color_ambient: Vector::new(0.05, 0.05, 0.05),
+        color_ambient: Vector::new(0.2, 0.2, 0.2),
         camera,
         shapes,
         lights
@@ -104,7 +143,7 @@ fn main() {
     let mut canvas = Image::blank(1920, 1080);
 
     // For a number of frames...
-    let frames = 40;
+    let frames = 80;
     for frame in 0..frames {
 
         println!("Rendering frame {}", frame);
@@ -119,6 +158,11 @@ fn main() {
         raster::save(&canvas, &filename).unwrap();
 
         // Move objects
+        for light in &mut scene.lights {
+            light.position.y -= 0.25;
+            light.position.z -= 0.25;
+        }
+
         for (i, mut shape) in scene.shapes.iter_mut().enumerate() {
             let new_pos = shape.get_position() + velocities[i];
             shape.set_position(&new_pos);

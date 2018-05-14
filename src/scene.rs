@@ -15,7 +15,8 @@ pub fn vector_to_color(vector: &Vector) -> Color {
 #[derive(Copy, Clone, Debug)]
 pub struct Camera {
     pub up: Vector,
-    pub dist: f64,
+    pub near_dist: f64,
+    pub far_dist: f64,
     pub eye: Ray,
     pub frust_width: f64,
     pub frust_height: f64
@@ -26,7 +27,7 @@ impl Camera {
     pub fn near_plane(&self) -> Plane {
 
         // Forces eye to be the the length of 'dist'.
-        let eye_to_center: Ray = self.eye.to_len(self.dist);
+        let eye_to_center: Ray = self.eye.to_len(self.near_dist);
 
         // Determines 'right' vector
         let right_dir: Vector = eye_to_center
@@ -56,7 +57,8 @@ impl Camera {
 #[derive(Debug, Clone)]
 pub struct Light {
     pub position: Vector,
-    pub color: Vector
+    pub color: Vector,
+    pub brightness: f64
 }
 
 #[derive(Debug)]
@@ -132,6 +134,8 @@ impl Scene {
 
                 // Determines direction of eye to plane position.
                 let eye_dir: Vector = plane_pos - eye;
+                let z_diff: f64 = camera.far_dist / -eye_dir.z;
+                let eye_dir = eye_dir * z_diff;
 
                 // Defines the ray to cast through that position
                 let ray = Ray { origin: plane_pos, dir: eye_dir };
@@ -158,14 +162,15 @@ impl Scene {
                     // Gets material color
                     let material_color: Vector = closest.color;
 
-                    // Initializes total light color as zero.
+                    // Initializes total light color and specular color as zero.
                     let mut total_light_color: Vector = Vector::new(0.0, 0.0, 0.0);
+                    let mut total_specular_color: Vector = Vector::new(0.0, 0.0, 0.0);
 
                     // Sums light color value for all lights
                     let surface_normal_unit: Vector = closest.normal.to_unit();
                     for light in &self.lights {
 
-                        // Skips this light if it is in the shadow
+                        // Skips this light if it is in the shadow.
                         let inter_pos: Vector = closest.position;
                         let light_dir: Vector = light.position - inter_pos;
                         let inter_to_light = Ray {
@@ -178,11 +183,22 @@ impl Scene {
                         let light_dir_unit: Vector = light_dir.to_unit();
                         let cos_angle: f64 = surface_normal_unit.dot(&light_dir_unit);
                         let delta_color = (light.color * cos_angle).clamp();
-                        total_light_color = total_light_color + delta_color;
+                        let intensity: f64 = 1.0 / (light_dir.len_squared());
+                        total_light_color = total_light_color + delta_color*intensity*light.brightness;
+
+                        // Adds specular value
+                        let light_dir_unit = -light_dir_unit;
+                        let normal = closest.normal.to_unit();
+                        let bounce: Vector = light_dir_unit - normal * 2.0 * (normal.dot(&light_dir_unit));
+                        let bounce_unit = bounce.to_unit();
+                        let eye_dir_unit: Vector = (-eye_dir).to_unit();
+                        let cos_angle = (eye_dir_unit.dot(&bounce_unit));
+                        let specular: f64 = (cos_angle).powf(closest.exponent);
+                        total_specular_color = (total_specular_color + light.color * specular * closest.reflectivity).clamp();
                     }
 
                     // Calculates final color
-                    let final_color: Vector = (material_color * (ambient_color + total_light_color)).clamp();
+                    let final_color: Vector = (material_color * (ambient_color + total_light_color) + total_specular_color).clamp();
 
                     // Sets current pixel to that color
                     image.set_pixel(x, y2, vector_to_color(&final_color)).unwrap();

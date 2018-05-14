@@ -190,5 +190,7 @@ pub struct Intersection {
     pub t: f64,
     pub position: Vector,
     pub normal: Vector,
-    pub color: Vector
+    pub color: Vector,
+    pub reflectivity: f64,
+    pub exponent: f64
 }
