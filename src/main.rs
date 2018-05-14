@@ -157,12 +157,6 @@ fn main() {
         let filename: String = format!("images/frame_{}.png", number_str);
         raster::save(&canvas, &filename).unwrap();
 
-        // Move objects
-        for light in &mut scene.lights {
-            light.position.y -= 0.25;
-            light.position.z -= 0.25;
-        }
-
         for (i, mut shape) in scene.shapes.iter_mut().enumerate() {
             let new_pos = shape.get_position() + velocities[i];
             shape.set_position(&new_pos);
