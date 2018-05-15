@@ -2,10 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2c94ec4b-1742-4655-805d-48e3e52f4464" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/animation.mp4" afterPath="$PROJECT_DIR$/animation.mp4" />
-      <change beforePath="$PROJECT_DIR$/src/geom.rs" afterPath="$PROJECT_DIR$/src/geom.rs" />
+      <change beforePath="$PROJECT_DIR$/Readme.md" afterPath="$PROJECT_DIR$/Readme.md" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" afterPath="$PROJECT_DIR$/src/main.rs" />
-      <change beforePath="$PROJECT_DIR$/src/scene.rs" afterPath="$PROJECT_DIR$/src/scene.rs" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -19,8 +17,8 @@
       <file leaf-file-name="main.rs" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="340">
-              <caret line="137" column="50" lean-forward="false" selection-start-line="137" selection-start-column="50" selection-end-line="137" selection-end-column="50" />
+            <state relative-caret-position="566">
+              <caret line="134" column="22" lean-forward="false" selection-start-line="134" selection-start-column="22" selection-end-line="134" selection-end-column="22" />
               <folding />
             </state>
           </provider>
@@ -660,8 +658,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main.rs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="340">
-          <caret line="137" column="50" lean-forward="false" selection-start-line="137" selection-start-column="50" selection-end-line="137" selection-end-column="50" />
+        <state relative-caret-position="566">
+          <caret line="134" column="22" lean-forward="false" selection-start-line="134" selection-start-column="22" selection-end-line="134" selection-end-column="22" />
           <folding />
         </state>
       </provider>

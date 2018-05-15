@@ -16,3 +16,12 @@ To produce a video, install ffmpeg and run the following command:
 ```bash
 ffmpeg -i images/frame_%05d.png -vf fps=60 -pix_fmt yuv420p -vcodec mpeg4 -b 50000k animation.mp4
 ```
+
+To render in the background and push later, try this sample command:
+```bash
+cargo run --release && \
+ffmpeg -i images/frame_%05d.png -vf fps=60 -pix_fmt yuv420p -vcodec mpeg4 -b 50000k animation.mp4 && \
+git add . && \
+git commit -m "Updating animation" && \
+git push
+```

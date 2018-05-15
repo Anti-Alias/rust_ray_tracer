@@ -132,7 +132,7 @@ fn main() {
     let zero = Vector::new(0.0, 0.0, 0.0);
 
     // Creates lights
-    let num_lights = 80;
+    let num_lights = 1;
     let mut lights = Vec::new();
     for _ in 0..num_lights {
         let rand_vec =  Vector::rand(&mut rng) * 4.0;
@@ -159,7 +159,7 @@ fn main() {
     let mut canvas = Image::blank(1920, 1080);
 
     // For a number of frames...
-    let frames = 160;
+    let frames = 10;
     let camera_dist = 25.0;
     for frame in 0..frames {
 
