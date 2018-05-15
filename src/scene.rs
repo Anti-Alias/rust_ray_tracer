@@ -139,13 +139,15 @@ impl Scene {
                 let bounce_unit = bounce.to_unit();
                 let eye_dir_unit: Vector = -ray.dir.to_unit();
                 let cos_angle = (eye_dir_unit.dot(&bounce_unit));
+                let cos_angle = if cos_angle < 0.0 { 0.0 } else {cos_angle};
                 let specular: f64 = (cos_angle).powf(closest.exponent);
-                total_specular_color = (total_specular_color + light.color * specular * closest.reflectivity).clamp();
+                total_specular_color = total_specular_color + light.color * specular * closest.reflectivity;
             }
 
             // Recurses if reflection is possible
-            let mut base_color: Vector = material_color;
-            if bounce_limit != 0 && closest.reflectivity > 0.0 {
+            let reflectivity:f64 = closest.reflectivity;
+            let mut reflect_color = Vector::new(0.0, 0.0, 0.0);
+            if bounce_limit != 0 && reflectivity > 0.0 {
 
                 // Reflects
                 let eye_dir_unit: Vector = ray.dir.to_unit();
@@ -156,13 +158,15 @@ impl Scene {
                 };
 
                 // Gets reflective color
-                let reflect_color: Vector = self.trace_color(&reflect_ray, bounce_limit - 1);
-                let diff_color:Vector  = reflect_color - base_color;
-                base_color = base_color + diff_color * closest.reflectivity;
+                reflect_color = reflect_color + self.trace_color(&reflect_ray, bounce_limit - 1) * closest.reflectivity;
             }
 
             // Calculates final color and returns it
-            let final_color: Vector = base_color * (ambient_color + total_light_color) + total_specular_color;
+            let reverse_refl = 1.0-reflectivity;
+            let base_color: Vector = (material_color * reverse_refl) + (reflect_color * reflectivity);
+            let shadow_color = (ambient_color + total_light_color);
+            let shadow_color = shadow_color.interp(&Vector::new(1.0, 1.0, 1.0), reflectivity);
+            let final_color: Vector = base_color * shadow_color + total_specular_color;
             return final_color;
         }
 

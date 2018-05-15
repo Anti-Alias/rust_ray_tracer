@@ -13,6 +13,7 @@ use geom::{Vector, Ray};
 use shape::{Shape, Sphere, Floor};
 use scene::{Scene, Camera, Light};
 use raster::{Image};
+use std::time::{Duration, Instant};
 use std::fs;
 use std::f64::consts::{PI};
 use rand::{Rng, SeedableRng, StdRng};
@@ -24,15 +25,15 @@ where T: Rng {
 
     let radius: f64 = rng.gen_range(min_radius, max_radius);
     let color = Vector {
-        x: rng.next_f64(),
-        y: rng.next_f64(),
-        z: rng.next_f64()
+        x: 0.2 + rng.next_f64() * 0.8,
+        y: 0.2 + rng.next_f64() * 0.8,
+        z: 0.2 + rng.next_f64() * 0.8
     };
     Sphere {
         center: Vector::new(0.0, 0.0, 0.0),
         radius,
         color,
-        reflectivity: 0.3,
+        reflectivity: 0.5,
         exponent: 30.0
     }
 }
@@ -63,7 +64,7 @@ fn main() {
     // Creates random number generator for creating objects in scene
     let seed: &[_] = &[1, 2, 3, 4];
     let mut rng:StdRng = SeedableRng::from_seed(seed);
-    let num_spheres = 100;
+    let num_spheres = 20;
 
     // Creates sphere(s) using rng
     let mut shapes: Vec<Box<Shape>> = Vec::new();
@@ -72,7 +73,7 @@ fn main() {
             Box::new(
                 rand_sphere(
                     0.3,
-                    1.0,
+                    2.0,
                     &mut rng
                 )
             )
@@ -84,7 +85,7 @@ fn main() {
         Box::new(
             Sphere {
                 center: Vector::new(0.0, 0.0, 0.0),
-                radius: 100.0,
+                radius: 400.0,
                 color: Vector::new(0.0, 1.0, 0.5),
                 reflectivity: 0.0,
                 exponent: 100.0
@@ -99,7 +100,7 @@ fn main() {
             Floor {
                 position: Vector::new(0.0, -5.0, 0.0),
                 color: Vector::new(0.0, 1.0, 0.5),
-                reflectivity: 0.5,
+                reflectivity: 0.7,
                 exponent: 15.0
             }
         )
@@ -127,22 +128,27 @@ fn main() {
         directions.push(rand_vel);
     }
 
-    // Adds zero valocity for floor
+    // Adds zero velocity for floor
     let zero = Vector::new(0.0, 0.0, 0.0);
 
     // Creates lights
-    let lights = vec![
-        Light {
-            position: Vector::new(0.0, 22.0, 10.0),
-            color: Vector::new(1.0, 1.0, 1.0),
-            brightness: 800.0
-        }
-    ];
+    let num_lights = 80;
+    let mut lights = Vec::new();
+    for _ in 0..num_lights {
+        let rand_vec =  Vector::rand(&mut rng) * 4.0;
+        lights.push(
+            Light {
+                position: Vector::new(0.0, 80.0, 0.0) + rand_vec,
+                color: Vector::new(1.0, 1.0, 1.0)  / (num_lights as f64),
+                brightness: 20000.0
+            }
+        )
+    }
 
     // Builds scene that will use camera
     let mut scene = Scene {
         color_background: Vector::new(0.2, 0.2, 0.2),
-        color_ambient: Vector::new(0.2, 0.3, 0.2),
+        color_ambient: Vector::new(0.1, 0.1, 0.1),
         camera,
         shapes,
         lights,
@@ -154,9 +160,10 @@ fn main() {
 
     // For a number of frames...
     let frames = 160;
-    let camera_dist = 35.0;
+    let camera_dist = 25.0;
     for frame in 0..frames {
 
+        let now = Instant::now();
         println!("Rendering frame {}", frame);
 
         {
@@ -185,6 +192,9 @@ fn main() {
 
         // Trace scene
         scene.render(&mut canvas);
+
+        // Finishes rendering
+        println!("Finished frame {} in {} seconds.", frame, now.elapsed().as_secs());
 
         // Save image
         fs::create_dir_all("images").unwrap();

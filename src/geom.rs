@@ -46,6 +46,11 @@ impl Vector {
         }
     }
 
+    pub fn interp(&self, point: &Vector, t: f64) -> Vector  {
+        let dist = *point - *self;
+        *self + dist * t
+    }
+
     pub fn clamp(&self) -> Vector {
         Vector { x: clamp(self.x), y: clamp(self.y), z: clamp(self.z)}
     }
