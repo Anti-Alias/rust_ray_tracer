@@ -6,9 +6,10 @@ use self::raster::{Image, Color};
 use std::cmp::Ordering;
 
 pub fn vector_to_color(vector: &Vector) -> Color {
-    let r = (vector.x * 255.0) as u8;
-    let g = (vector.y * 255.0) as u8;
-    let b = (vector.z * 255.0) as u8;
+    let clamped = vector.clamp();
+    let r = (clamped.x * 255.0) as u8;
+    let g = (clamped.y * 255.0) as u8;
+    let b = (clamped.z * 255.0) as u8;
     Color { r, g, b, a: 255 }
 }
 
@@ -67,25 +68,106 @@ pub struct Scene {
     pub color_ambient: Vector,
     pub camera: Camera,
     pub shapes: Vec<Box<Shape>>,
-    pub lights: Vec<Light>
+    pub lights: Vec<Light>,
+    pub bounce_limit: u32
 }
 
 impl Scene {
 
     /// Writes intersections of a ray with all objects in the scene.
-    fn write_intersections(&self, ray: &Ray, intersections: &mut Vec<Intersection>) {
+    fn trace_color(&self, ray: &Ray, bounce_limit: u32) -> Vector {
 
-        // For every object in the scene...
+        // Initializes closest value as nothing.
+        let mut maybe_closest: Option<Intersection> = None;
+
+        // Finds closest intersection, if any
         for shape in &self.shapes {
 
             // Calculates intersection
             let maybe_inter: Option<Intersection> = shape.intersect(ray);
 
             // If intersection found, add that intersection
-            if let Some(inter) = maybe_inter {
-                intersections.push(inter);
+            if let Some(new_inter) = maybe_inter {
+                if let Some(closest) = maybe_closest {
+                    if new_inter.t < closest.t {
+                        maybe_closest = maybe_inter;
+                    }
+                }
+                else {
+                    maybe_closest = maybe_inter;
+                }
             }
         }
+
+        // If intersections were found..
+        if let Some(closest) = maybe_closest {
+
+            // Gets ambient color
+            let ambient_color: Vector = self.color_ambient;
+
+            // Gets material color
+            let material_color: Vector = closest.color;
+
+            // Initializes total light color and specular color as zero.
+            let mut total_light_color: Vector = Vector::new(0.0, 0.0, 0.0);
+            let mut total_specular_color: Vector = Vector::new(0.0, 0.0, 0.0);
+
+            // Sums light color value for all lights
+            let inter_pos: Vector = closest.position;
+            let surface_normal_unit = closest.normal.to_unit();
+
+            for light in &self.lights {
+
+                // Skips this light if it is in the shadow.
+                let light_dir: Vector = light.position - inter_pos;
+                let inter_to_light = Ray {
+                    origin: inter_pos,
+                    dir: light_dir
+                };
+                if self.intersects(&inter_to_light) { continue; }
+
+                // Adds light value
+                let light_dir_unit: Vector = light_dir.to_unit();
+                let cos_angle: f64 = surface_normal_unit.dot(&light_dir_unit);
+                let delta_color = (light.color * cos_angle).clamp();
+                let intensity: f64 = 1.0 / (light_dir.len_squared());
+                total_light_color = total_light_color + delta_color * intensity * light.brightness;
+
+                // Adds specular value
+                let light_dir_unit = -light_dir_unit;
+                let bounce: Vector = light_dir_unit - surface_normal_unit * 2.0 * (surface_normal_unit.dot(&light_dir_unit));
+                let bounce_unit = bounce.to_unit();
+                let eye_dir_unit: Vector = -ray.dir.to_unit();
+                let cos_angle = (eye_dir_unit.dot(&bounce_unit));
+                let specular: f64 = (cos_angle).powf(closest.exponent);
+                total_specular_color = (total_specular_color + light.color * specular * closest.reflectivity).clamp();
+            }
+
+            // Recurses if reflection is possible
+            let mut base_color: Vector = material_color;
+            if bounce_limit != 0 && closest.reflectivity > 0.0 {
+
+                // Reflects
+                let eye_dir_unit: Vector = ray.dir.to_unit();
+                let bounce: Vector = eye_dir_unit - surface_normal_unit * 2.0 * surface_normal_unit.dot(&eye_dir_unit);
+                let reflect_ray = Ray {
+                    origin: closest.position,
+                    dir: bounce * self.camera.far_dist
+                };
+
+                // Gets reflective color
+                let reflect_color: Vector = self.trace_color(&reflect_ray, bounce_limit - 1);
+                let diff_color:Vector  = reflect_color - base_color;
+                base_color = base_color + diff_color * closest.reflectivity;
+            }
+
+            // Calculates final color and returns it
+            let final_color: Vector = base_color * (ambient_color + total_light_color) + total_specular_color;
+            return final_color;
+        }
+
+        // Default color return
+        return self.color_background;
     }
 
     /// Returns true if ray intersects with any object in the scene
@@ -104,15 +186,12 @@ impl Scene {
         let width: i32 = image.width;
         let height: i32 = image.height;
 
-        // Gets camera and eye position
+        // Gets camera and eye_origin position
         let camera: &Camera = &self.camera;
-        let eye:Vector = camera.eye.origin;
+        let eye_origin:Vector = camera.eye.origin;
 
         // Gets plane at which to trace rays
         let plane = self.camera.near_plane();
-
-        // Creates structure that stores intersections.
-        let mut intersections = Vec::<Intersection>::new();
 
         // For all pixels...
         for y in 0..height {
@@ -122,9 +201,6 @@ impl Scene {
                 // Flips upside-down
                 let y2 = height - y - 1;
 
-                // Clears intersections for this run
-                intersections.clear();
-
                 // Gets coordinate ratios
                 let xr:f64 = (x as f64 + 0.5) / width as f64;
                 let yr:f64 = (y as f64 + 0.5) / height as f64;
@@ -132,80 +208,18 @@ impl Scene {
                 // Gets associated point on the plane
                 let plane_pos: Vector = plane.interp(xr, yr);
 
-                // Determines direction of eye to plane position.
-                let eye_dir: Vector = plane_pos - eye;
-                let z_diff: f64 = camera.far_dist / -eye_dir.z;
+                // Determines direction of eye_origin to plane position.
+                let eye_dir: Vector = plane_pos - eye_origin;
+                let z_diff: f64 = camera.far_dist / eye_dir.len();
                 let eye_dir = eye_dir * z_diff;
 
                 // Defines the ray to cast through that position
                 let ray = Ray { origin: plane_pos, dir: eye_dir };
 
-                // Calculates intersections
-                self.write_intersections(&ray, &mut intersections);
+                let color: Vector = self.trace_color(&ray, self.bounce_limit);
 
-                // If intersections were found..
-                if intersections.len() > 0 {
-
-                    // Sorts intersections from closest to farthest
-                    intersections.sort_unstable_by(|a, b| {
-                        if a.t < b.t { Ordering::Less }
-                        else if a.t > b.t { Ordering::Greater }
-                        else { Ordering::Equal }
-                    });
-
-                    // Gets closest one
-                    let closest: &Intersection = &intersections[0];
-
-                    // Gets ambient color
-                    let ambient_color: Vector = self.color_ambient;
-
-                    // Gets material color
-                    let material_color: Vector = closest.color;
-
-                    // Initializes total light color and specular color as zero.
-                    let mut total_light_color: Vector = Vector::new(0.0, 0.0, 0.0);
-                    let mut total_specular_color: Vector = Vector::new(0.0, 0.0, 0.0);
-
-                    // Sums light color value for all lights
-                    let surface_normal_unit: Vector = closest.normal.to_unit();
-                    for light in &self.lights {
-
-                        // Skips this light if it is in the shadow.
-                        let inter_pos: Vector = closest.position;
-                        let light_dir: Vector = light.position - inter_pos;
-                        let inter_to_light = Ray {
-                            origin: inter_pos,
-                            dir: light_dir
-                        };
-                        if self.intersects(&inter_to_light) { continue; }
-
-                        // Adds light value
-                        let light_dir_unit: Vector = light_dir.to_unit();
-                        let cos_angle: f64 = surface_normal_unit.dot(&light_dir_unit);
-                        let delta_color = (light.color * cos_angle).clamp();
-                        let intensity: f64 = 1.0 / (light_dir.len_squared());
-                        total_light_color = total_light_color + delta_color*intensity*light.brightness;
-
-                        // Adds specular value
-                        let light_dir_unit = -light_dir_unit;
-                        let normal = closest.normal.to_unit();
-                        let bounce: Vector = light_dir_unit - normal * 2.0 * (normal.dot(&light_dir_unit));
-                        let bounce_unit = bounce.to_unit();
-                        let eye_dir_unit: Vector = (-eye_dir).to_unit();
-                        let cos_angle = (eye_dir_unit.dot(&bounce_unit));
-                        let specular: f64 = (cos_angle).powf(closest.exponent);
-                        total_specular_color = (total_specular_color + light.color * specular * closest.reflectivity).clamp();
-                    }
-
-                    // Calculates final color
-                    let final_color: Vector = (material_color * (ambient_color + total_light_color) + total_specular_color).clamp();
-
-                    // Sets current pixel to that color
-                    image.set_pixel(x, y2, vector_to_color(&final_color)).unwrap();
-                }
-                else {
-                    image.set_pixel(x, y2, vector_to_color(&self.color_background)).unwrap();
-                }
+                // Sets current pixel to that color
+                image.set_pixel(x, y2, vector_to_color(&color)).unwrap();
             }
         }
     }

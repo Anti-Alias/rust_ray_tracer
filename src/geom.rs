@@ -185,7 +185,7 @@ impl Plane {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Intersection {
     pub t: f64,
     pub position: Vector,
